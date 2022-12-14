@@ -80,17 +80,15 @@ class AlchemyModel(ABC, Registrable):
         # 偷了个懒，没有写type hint
         return self.model.to(*args, **kwargs)
 
-    @abstractmethod
     def max_positions(self):
         """Maximum length supported by the model."""
         return None
 
-    @abstractmethod
-    def optim_params(self, **kwargs):
-        pass
+    def set_requires_grad(self, requires_grad: bool, mode: str, **kwargs):
+        raise NotImplementedError()
 
     @abstractmethod
-    def set_requires_grad(self, requires_grad: bool, mode: str, **kwargs):
+    def optim_params(self, **kwargs):
         pass
 
     @abstractmethod

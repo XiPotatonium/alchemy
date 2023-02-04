@@ -12,25 +12,35 @@ app = FastAPI()
 
 ARGS: Dict[str, Any] = {}
 RECORDS_DIR = Path("records")
-# 这样设置好吗?
-PUBLIC_DIR = Path(__file__).parent.with_name("public")
+PUBLIC_DIR = Path(__file__).parent.with_name("frontend")
 
 
 @app.get("/")
 async def get_home():
-    # return PlainTextResponse("alchemy")
     return FileResponse(PUBLIC_DIR / "index.html")
 
 
+@app.get("/favicon.ico")
+async def get_favicon():
+    path = PUBLIC_DIR / "favicon.ico"
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="{} not found".format(path))
+    return FileResponse(path)
+
+
 @app.get("/assets/{whatever:path}")
-async def get_static_files(whatever: str):
+async def get_assets(whatever: str):
     path = PUBLIC_DIR / "assets" / whatever
     if not path.exists():
         raise HTTPException(status_code=404, detail="{} not found".format(path))
     if path.is_file():
-        return FileResponse(path)
-    return PlainTextResponse("alchemy")
-    # return FileResponse(PUBLIC_DIR / "index.html")
+        if path.suffix == ".js":
+            # 默认media_type是text/plain，这使得浏览器会认为返回的是文本文件，这样返回的js文件不会执行
+            # 而assets中实际上是js模块，需要手动指定
+            return FileResponse(path, media_type="text/javascript")
+        else:
+            return FileResponse(path)
+    return FileResponse(PUBLIC_DIR / "index.html")
 
 
 @dataclass
@@ -41,7 +51,7 @@ class FileInfo:
     mtime: str
 
 
-def read_file_info(path: Path) -> FileInfo:
+def read_finfo(path: Path) -> FileInfo:
     import time
     ty = "missing" if not path.exists() else "file" if path.is_file() else "folder"
     plist = list(path.parts)
@@ -50,31 +60,27 @@ def read_file_info(path: Path) -> FileInfo:
     return FileInfo(ty=ty, path=plist, ctime=ctime, mtime=mtime)
 
 
-@app.get("/records/")
-async def read_record_root():
-    subitems = [read_file_info(r) for r in RECORDS_DIR.iterdir()]
-    return {"path": ["records"], "subitems": subitems}
+@app.get("/api/lsFiles/")
+async def ls_root():
+    subitems = [read_finfo(r) for r in RECORDS_DIR.iterdir()]
+    return {"path": list(RECORDS_DIR.parts), "subitems": subitems}
 
 
-@app.get("/records/{p:path}")
-async def read_record(p: str):
+@app.get("/api/lsFiles/{p:path}")
+async def ls_files(p: str):
     path = RECORDS_DIR / p
+    if not path.exists():
+        pass
+    subitems = [read_finfo(r) for r in path.iterdir()]
+    return {"path": list(path.parts), "subitems": subitems }
 
-    if path.is_file():
+
+@app.get("/api/getFile/{p:path}")
+async def get_file(p: str):
+    path = RECORDS_DIR / p
+    if not path.exists():
+        pass
+    if path.suffix == ".html":
+        return HTMLResponse(path.read_text(encoding="utf8"))
+    else:
         return FileResponse(path)
-
-    subitems = [read_file_info(r) for r in path.iterdir()]
-
-    ret = {"path": list(path.parts), "subitems": subitems}
-
-    cfg_file = path / "cfg.toml"
-    readme_file = path / "README.md"
-    if cfg_file.exists():
-        with cfg_file.open('r', encoding="utf8") as f:
-            cfg = tomlkit.load(f).value
-        ret["cfg"] = cfg
-    if readme_file.exists():
-        doc = readme_file.read_text(encoding="utf8")
-        ret["doc"] = doc
-
-    return ret

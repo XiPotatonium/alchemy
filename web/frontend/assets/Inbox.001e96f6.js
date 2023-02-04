@@ -1,0 +1,1 @@
+import{_ as o}from"./_plugin-vue_export-helper.cdc0426e.js";import{V as t}from"./VContainer.cde25caf.js";import{as as a,at as e,au as r,aD as n}from"./index.c1a0175a.js";const s={},c=n("h1",null,"Inbox",-1);function _(f,i){return a(),e(t,null,{default:r(()=>[c]),_:1})}const d=o(s,[["render",_]]);export{d as default};

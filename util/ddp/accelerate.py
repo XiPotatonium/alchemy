@@ -13,7 +13,7 @@ from alchemy.model import BackwardHandler
 from alchemy.pipeline import (
     DataPipeline, EvalPipeline, ItrDataPipeline, SchedPipeline, EndStepPipeline
 )
-from alchemy import sym_tbl, AlchemyTrainScheduler, AlchemyTask, AlchemyModel, AlchemyOptimizer, RunResult, AlchemyRunner
+from alchemy import sym_tbl, AlchemyTrainScheduler, AlchemyTask, AlchemyModel, AlchemyOptimizer, AlchemyRunner
 from alchemy.util import filter_optional_cfg
 from alchemy.util.extention.rich import full_columns, no_total_columns
 from accelerate import Accelerator, DistributedDataParallelKwargs
@@ -24,8 +24,8 @@ from transformers import PreTrainedModel
 _VARNAME = "accelerator"
 
 
-@AlchemyRunner.register("AccelerateTrainer")
-class AccelerateTrainer(AlchemyTrainer):
+@AlchemyRunner.register()
+class Trainer(AlchemyTrainer):
     def __init__(self, cfg: MutableMapping[str, Any], device_info: Dict[str, Any], **kwargs):
         accelerator = Accelerator(kwargs_handlers=[DistributedDataParallelKwargs(find_unused_parameters=True)])
         if not accelerator.is_main_process:
@@ -35,7 +35,7 @@ class AccelerateTrainer(AlchemyTrainer):
         super().__init__(cfg, device_info, **kwargs)
         sym_tbl().device_info = accelerator.device
 
-    def run(self) -> RunResult:
+    def run(self):
         sym_tbl().task = AlchemyTask.from_registry(sym_tbl().cfg["task"]["type"])
         sym_tbl().model = AlchemyModel.from_registry(sym_tbl().cfg["model"]["type"])
         # sym_tbl().model.to(sym_tbl().device)     # occupy GPU as soon as possible
@@ -82,15 +82,10 @@ class AccelerateTrainer(AlchemyTrainer):
                 sym_tbl().pop_global("pbar")
 
             sym_tbl().train_sched.end_train_epoch()
-        return RunResult(
-            record_dir=sym_tbl().try_get_global("record_dir"),
-            cfg=sym_tbl().cfg,
-            ret=None,
-        )
 
 
-@AlchemyPlugin.register("AccelerateBasicSetup")
-class AccelerateBasicSetup(AlchemyPlugin):
+@AlchemyPlugin.register()
+class BasicSetup(AlchemyPlugin):
     def __init__(self, **kwargs) -> None:
         super().__init__()
 
@@ -115,8 +110,8 @@ class AccelerateBasicSetup(AlchemyPlugin):
             )
 
 
-@DataPipeline.register("AccelerateSharding")
-class AccelerateSharding(ItrDataPipeline):
+@DataPipeline.register()
+class Sharding(ItrDataPipeline):
     def __init__(self, datapipe: ItrDataPipeline, **kwargs):
         super().__init__()
         self.datapipe = datapipe
@@ -131,7 +126,7 @@ class AccelerateSharding(ItrDataPipeline):
         return iter(self.datapipe)
 
 
-@AlchemyOptimizer.register("AccelerateHFAdamW")
+@AlchemyOptimizer.register()
 class HFAdamW(AlchemyOptimizer):
     def __init__(self):
         super(HFAdamW, self).__init__()
@@ -159,8 +154,8 @@ class HFAdamW(AlchemyOptimizer):
         super().step()
 
 
-@BackwardHandler.register("AccelerateBackward")
-class AccelerateDDPBackwardHandle(BackwardHandler):
+@BackwardHandler.register("Backward")
+class BackwardHandle(BackwardHandler):
     def __init__(self, **kwargs) -> None:
         super().__init__()
 
@@ -187,8 +182,8 @@ class AccelerateDDPBackwardHandle(BackwardHandler):
         return loss.item()
 
 
-@SchedPipeline.register("AccelerateEvalStepESPipeline")
-class AccelerateEvalStepESPipeline(EndStepPipeline):
+@SchedPipeline.register("EvalStepESPipeline")
+class EvalStepESPipeline(EndStepPipeline):
     def __init__(self, period: int, split: str = "dev", needs_loss: bool = True, **kwargs):
         super().__init__()
         self.period = period

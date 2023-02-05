@@ -16,7 +16,7 @@ class SaveAppend(OutputPipeline):
         self.step_tag = step_tag
 
     def __call__(self, outputs: Any, inputs: MutableMapping[str, Any]) -> Any:
-        record_dir: Optional[Path] = sym_tbl().try_get_global("record_dir")
+        record_dir: Optional[Path] = sym_tbl().record_dir
         if record_dir is not None:
             filename = record_dir / self.filename
             sched: Optional[AlchemyTrainScheduler] = sym_tbl().train_sched

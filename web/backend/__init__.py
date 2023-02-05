@@ -1,17 +1,20 @@
+import json
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import List
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import HTMLResponse
-from starlette.responses import FileResponse, PlainTextResponse
+from starlette.responses import FileResponse, PlainTextResponse, HTMLResponse
+from pydantic import BaseModel
 from pathlib import Path
+
+from .. import SETTING_FILE, MAILS_DIR, Setting
+
 
 app = FastAPI()
 
 
-ARGS: Dict[str, Any] = {}
-RECORDS_DIR = Path("records")
 PUBLIC_DIR = Path(__file__).parent.with_name("frontend")
+RECORDS_DIR = Path("records")
 
 
 @app.get("/")
@@ -40,6 +43,32 @@ async def get_assets(whatever: str):
         else:
             return FileResponse(path)
     return FileResponse(PUBLIC_DIR / "index.html")
+
+
+@app.get("/api/getInfo")
+async def get_info():
+    return {"cwd": list(Path.cwd().parts)}
+
+
+@app.get("/api/getSettings")
+async def get_settings():
+    if not SETTING_FILE.exists():
+        raise HTTPException(status_code=404, detail="{} not found".format(SETTING_FILE))
+    with SETTING_FILE.open('r', encoding="utf8") as rf:
+        return json.load(rf)
+
+
+class SettingProto(BaseModel):
+    theme: str
+    mail_fetch_period: int      # in second
+
+
+@app.post("/api/setSettings")
+async def set_settings(settings: SettingProto):
+    jsettings = settings.json()
+    with SETTING_FILE.open('w', encoding="utf8") as wf:
+        wf.write(jsettings)
+    return settings
 
 
 @dataclass
@@ -83,3 +112,14 @@ async def get_file(p: str):
         return HTMLResponse(path.read_text(encoding="utf8"))
     else:
         return FileResponse(path)
+
+
+@app.get("/api/getMails")
+async def get_mails():
+    mails = []
+    for path in MAILS_DIR.iterdir():
+        with path.open('r', encoding="utf8") as rf:
+            mails.append(json.load(rf))
+    return {
+        "mails": mails
+    }

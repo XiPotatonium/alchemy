@@ -2,7 +2,6 @@
 from __future__ import annotations
 from typing import List, Optional
 import random
-import datetime
 import os
 import shutil
 from pathlib import Path
@@ -37,7 +36,7 @@ class AlchemyPlugin(Registrable):
         pass
 
 
-@AlchemyPlugin.register("BasicSetup")
+@AlchemyPlugin.register()
 class BasicSetup(AlchemyPlugin):
     def __init__(self, **kwargs) -> None:
         super().__init__()
@@ -61,7 +60,7 @@ class BasicSetup(AlchemyPlugin):
         )
 
 
-@AlchemyPlugin.register("FileLogger")
+@AlchemyPlugin.register()
 class FileLogger(AlchemyPlugin):
     def __init__(
         self,
@@ -88,7 +87,7 @@ class FileLogger(AlchemyPlugin):
             logger.info("Run without log and record due to no_file=True")
         else:
             # logging dir
-            timestamp = str(datetime.datetime.now()).replace(' ', '_').replace(':', '-')
+            timestamp = str(sym_tbl().ctime).replace(' ', '_').replace(':', '-')
             record_dir = self.log_dir / timestamp
             logger.info("Create record dir at \"{}\"", record_dir)
             record_dir.mkdir(parents=True, exist_ok=False)  # should not have same datetime.now()
@@ -113,19 +112,19 @@ class FileLogger(AlchemyPlugin):
                 backup_dir.mkdir(parents=True, exist_ok=True)
                 with (record_dir / "cfg.toml").open("w", encoding="utf8") as f:
                     tomlkit.dump(sym_tbl().cfg, f)  # backup config
-            sym_tbl().set_global("record_dir", record_dir)
+            sym_tbl().record_dir = record_dir
             sym_tbl().set_global("checkpt_dir", checkpt_dir)
 
 
-@AlchemyPlugin.register("Backup")
+@AlchemyPlugin.register()
 class Backup(AlchemyPlugin):
     def __init__(self, paths: List[str], **kwargs) -> None:
         super().__init__()
         self.paths = [Path(p) for p in paths]
 
     def __enter__(self):
-        if sym_tbl().contains_global("record_dir"):
-            record_dir: Path = sym_tbl().get_global("record_dir")
+        record_dir: Optional[Path] = sym_tbl().record_dir
+        if record_dir is not None:
             backup_dir = record_dir / "backup"
             backup_dir.mkdir(parents=True, exist_ok=True)
             for path in self.paths:
@@ -137,7 +136,7 @@ class Backup(AlchemyPlugin):
                     raise NotImplementedError()
 
 
-@AlchemyPlugin.register("TensorboardLogger")
+@AlchemyPlugin.register()
 class TensorboardLogger(AlchemyPlugin):
 
     def __init__(self, varname: str = "summary_writer", **kwargs) -> None:
@@ -146,7 +145,7 @@ class TensorboardLogger(AlchemyPlugin):
         self.summary_writer = None
 
     def __enter__(self):
-        record_dir: Optional[Path] = sym_tbl().try_get("record_dir")
+        record_dir: Optional[Path] = sym_tbl().record_dir
         if record_dir is not None:
             self.summary_writer = SummaryWriter(
                 str(record_dir)
@@ -160,7 +159,7 @@ class TensorboardLogger(AlchemyPlugin):
             sym_tbl().pop_global(self.varname)
 
 
-@AlchemyPlugin.register("Seeding")
+@AlchemyPlugin.register()
 class Seeding(AlchemyPlugin):
     def __init__(
         self,
@@ -193,7 +192,7 @@ class Seeding(AlchemyPlugin):
                 torch.use_deterministic_algorithms(True)
 
 
-@AlchemyPlugin.register("DisplayRunningInfo")
+@AlchemyPlugin.register()
 class DisplayRunningInfo(AlchemyPlugin):
     def __init__(self, **kwargs) -> None:
         super().__init__()

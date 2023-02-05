@@ -5,7 +5,7 @@ from . import ItrDataPipeline, LstDataPipeline, DataPipeline
 from rich.progress import Progress
 
 
-@DataPipeline.register("ItrToLst")
+@DataPipeline.register()
 class ItrToLst(LstDataPipeline):
     def __init__(
         self,
@@ -31,7 +31,7 @@ class ItrToLst(LstDataPipeline):
         return len(self.data)
 
 
-@DataPipeline.register("SequenceWrapper")
+@DataPipeline.register()
 class SequenceWrapper(LstDataPipeline):
     def __init__(self, datapipe: List, **kwargs):
         super().__init__()

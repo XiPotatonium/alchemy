@@ -83,7 +83,7 @@ class AlchemyOptimizer(ABC, Registrable):
         self.optimizer.step()
 
 
-@AlchemyOptimizer.register("AdamW")
+@AlchemyOptimizer.register()
 class AdamW(AlchemyOptimizer):
     def __init__(self):
         super(AdamW, self).__init__()
@@ -111,7 +111,7 @@ class AdamW(AlchemyOptimizer):
         super().step()
 
 
-@AlchemyOptimizer.register("HFAdamW")
+@AlchemyOptimizer.register()
 class HFAdamW(AlchemyOptimizer):
     def __init__(self):
         super(HFAdamW, self).__init__()

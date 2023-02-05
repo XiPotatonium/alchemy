@@ -5,7 +5,7 @@ from . import ItrDataPipeline, DataPipeline
 from torch.utils.data import get_worker_info
 
 
-@DataPipeline.register("Batch")
+@DataPipeline.register()
 class Batch(ItrDataPipeline):
 
     def __init__(
@@ -32,7 +32,7 @@ class Batch(ItrDataPipeline):
                 yield batch
 
 
-@DataPipeline.register("WithLength")
+@DataPipeline.register()
 class WithLength(ItrDataPipeline):
     def __init__(self, datapipe: ItrDataPipeline, length: Optional[int], **kwargs):
         super().__init__()
@@ -49,7 +49,7 @@ class WithLength(ItrDataPipeline):
             raise TypeError("{} instance doesn't have valid length".format(type(self).__name__))
 
 
-@DataPipeline.register("Shuffle")
+@DataPipeline.register()
 class Shuffle(ItrDataPipeline):
 
     def __init__(
@@ -89,7 +89,7 @@ class Shuffle(ItrDataPipeline):
                 yield buffer.pop()
 
 
-@DataPipeline.register("SplitByWorker")
+@DataPipeline.register()
 class SplitByWorker(ItrDataPipeline):
     def __init__(self, datapipe: ItrDataPipeline, **kwargs):
         super().__init__()

@@ -1,1 +1,0 @@
-import{_ as t}from"./_plugin-vue_export-helper.cdc0426e.js";import{V as a}from"./VContainer.cde25caf.js";import{as as e,at as r,au as o,aD as s}from"./index.c1a0175a.js";const c={},n=s("h1",null,"Starred",-1);function _(f,d){return e(),r(a,null,{default:o(()=>[n]),_:1})}const u=t(c,[["render",_]]);export{u as default};

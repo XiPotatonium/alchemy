@@ -8,7 +8,7 @@ from ..util.sym import sym_tbl
 from ..runner import evaluate
 
 
-@SchedPipeline.register("SetRequiresGradBSPipeline")
+@SchedPipeline.register()
 class SetRequiresGradBSPipeline(BeginStepPipeline):
     def __init__(self, step: int, requires_grad: bool, mode: str, **kwargs) -> None:
         super().__init__()
@@ -28,7 +28,7 @@ class SetRequiresGradBSPipeline(BeginStepPipeline):
         return kwargs
 
 
-@SchedPipeline.register("InitEvalBEPipeline")
+@SchedPipeline.register()
 class InitEvalBEPipeline(BeginEpochPipeline):
     def __init__(self, split: str = "dev", needs_loss: bool = True, **kwargs) -> None:
         super().__init__()
@@ -45,7 +45,7 @@ class InitEvalBEPipeline(BeginEpochPipeline):
         return kwargs
 
 
-@SchedPipeline.register("EndEvalEEPipeline")
+@SchedPipeline.register()
 class EndEvalEEPipeline(EndEpochPipeline):
     def __init__(self, split: str = "dev", needs_loss: bool = True, **kwargs) -> None:
         super().__init__()
@@ -63,7 +63,7 @@ class EndEvalEEPipeline(EndEpochPipeline):
         return kwargs
 
 
-@SchedPipeline.register("EvalStepESPipeline")
+@SchedPipeline.register()
 class EvalStepESPipeline(EndStepPipeline):
     def __init__(self, period: int, split: str = "dev", needs_loss: bool = True, **kwargs) -> None:
         super().__init__()
@@ -81,7 +81,7 @@ class EvalStepESPipeline(EndStepPipeline):
         return kwargs
 
 
-@SchedPipeline.register("EvalEpochEEPipeline")
+@SchedPipeline.register()
 class EvalEpochEEPipeline(EndEpochPipeline):
     def __init__(self, period: int, split: str = "dev", needs_loss: bool = True, **kwargs) -> None:
         super().__init__()

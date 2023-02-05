@@ -1,4 +1,5 @@
 from copy import deepcopy
+from dataclasses import dataclass
 from math import ceil
 from queue import Queue
 import time
@@ -11,9 +12,17 @@ from .util.alloc_gpu import alloc_cuda
 from .util.sym import sym_tbl, new_scope
 from .model import AlchemyModel
 from .task import AlchemyTask
-from .runner import RunResult, AlchemyRunner
+from .runner import AlchemyRunner
 from .sched import AlchemyTrainScheduler
 from .optim import AlchemyOptimizer
+
+
+@dataclass
+class RunResult:
+    record_dir: Optional[Path]
+    cfg: MutableMapping
+    ret: Any
+    exception: Optional[Exception]
 
 
 class RepeatIter(Iterator):
@@ -55,17 +64,27 @@ def prepare_cfg(cfg: Union[Path, MutableMapping]) -> MutableMapping:
 
 def run_task(cfg: MutableMapping, device_info: Dict[str, Any], **kwargs) -> RunResult:
     with AlchemyRunner.from_registry(cfg["runner"], cfg, device_info, **kwargs) as runner:
-        return runner.run()
+        try:
+            runner.run()
+        except Exception as e:
+            sym_tbl().exception = e     # Some plugins may need this value for debugging
+            raise e
 
 
 def _run_task_wrapper(q: Queue, cfg: MutableMapping, device_info: Dict[str, Any], **kwargs):
     try:
         result = run_task(cfg, device_info, **kwargs)
-        q.put(result)
     except Exception as e:
-        # 无论如何都要put，不然主线程会卡住
-        q.put(e)
+        result = RunResult(
+            record_dir=sym_tbl().record_dir,
+            cfg=sym_tbl().cfg,
+            ret=sym_tbl().ret,
+            exception=e,
+        )
         raise e
+    finally:
+        # 无论如何都要put，不然主线程会卡住
+        q.put(result)
 
 
 def run(
@@ -77,7 +96,7 @@ def run(
     no_file: bool = False,
     force_mp: bool = False,
     task_per_device: int = 1,
-) -> List[Union[RunResult, Exception]]:
+) -> List[RunResult]:
     """注意在多进程（len(cfgs) != 1）的情况下，返回的顺序和cfgs并不一定对应
 
     Args:
@@ -91,7 +110,7 @@ def run(
         task_per_device (int, optional): _description_. Default to 1.
 
     Returns:
-        List[Union[RunResult, Exception]]: _description_
+        List[RunResult]: _description_
     """
     ret = []
 

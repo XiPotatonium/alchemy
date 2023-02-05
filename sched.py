@@ -134,7 +134,7 @@ class NoamScheduler(_LRScheduler):
         )
 
 
-@AlchemyTrainScheduler.register("LineWarmup")
+@AlchemyTrainScheduler.register()
 class LineWarmup(AlchemyTrainScheduler):
     def __init__(self):
         super(LineWarmup, self).__init__()
@@ -158,7 +158,7 @@ class LineWarmup(AlchemyTrainScheduler):
         )
 
 
-@AlchemyTrainScheduler.register("Noam")
+@AlchemyTrainScheduler.register()
 class Noam(AlchemyTrainScheduler):
     def __init__(self):
         super(Noam, self).__init__()

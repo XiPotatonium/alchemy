@@ -3,7 +3,6 @@ from typing import List, Optional
 import typer
 
 
-
 app = typer.Typer()
 
 
@@ -33,7 +32,8 @@ def serve(
     port: Optional[int] = 8000,
 ):
     import uvicorn
-    from .web.backend import ARGS
+    from .web import init
+    init()
     uvicorn.run("alchemy.web.backend:app", host=host, port=port, log_level="info")
 
 

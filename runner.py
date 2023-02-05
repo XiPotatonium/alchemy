@@ -1,8 +1,10 @@
-from dataclasses import dataclass
+# __future__.annotations will become the default in Python 3.11
+from __future__ import annotations
+
 from typing import Any, Dict, List, MutableMapping, Optional
 from abc import ABC, abstractmethod
 import random
-from pathlib import Path
+from datetime import datetime
 
 import numpy as np
 
@@ -21,13 +23,6 @@ from .sched import AlchemyTrainScheduler
 from .plugins import AlchemyPlugin
 
 
-@dataclass
-class RunResult:
-    record_dir: Optional[Path]
-    cfg: MutableMapping
-    ret: Any
-
-
 class AlchemyRunner(Registrable, ABC):
     """Runner is a wrapper for run logic
 
@@ -39,7 +34,7 @@ class AlchemyRunner(Registrable, ABC):
         _type_: _description_
     """
     @classmethod
-    def from_registry(cls, ty: str, cfg: MutableMapping, device_info: Dict[str, Any], **kwargs):
+    def from_registry(cls, ty: str, cfg: MutableMapping, device_info: Dict[str, Any], **kwargs) -> AlchemyRunner:
         runner_cls = cls.resolve_registered_module(ty)
         runner = runner_cls(cfg, device_info, **kwargs)
         return runner
@@ -54,6 +49,7 @@ class AlchemyRunner(Registrable, ABC):
         sym_tbl().cfg = cfg
         sym_tbl().device_info = device_info
         sym_tbl().device = torch.device(device_info["device"])
+        sym_tbl().ctime = datetime.now()
 
         for key, val in kwargs.items():
             sym_tbl().set_global(key, val)
@@ -72,7 +68,7 @@ class AlchemyRunner(Registrable, ABC):
             p.__exit__(exc_type, exc_val, exc_tb)
 
     @abstractmethod
-    def run(self) -> RunResult:
+    def run(self):
         pass
 
 
@@ -81,7 +77,7 @@ class AlchemyTrainer(AlchemyRunner):
     def __init__(self, cfg: MutableMapping[str, Any], device_info: Dict[str, Any], **kwargs):
         super().__init__(cfg, device_info, **kwargs)
 
-    def run(self) -> RunResult:
+    def run(self):
         sym_tbl().task = AlchemyTask.from_registry(sym_tbl().cfg["task"]["type"])
         sym_tbl().model = AlchemyModel.from_registry(sym_tbl().cfg["model"]["type"])
         sym_tbl().model.to(sym_tbl().device)     # occupy GPU as soon as possible
@@ -118,16 +114,11 @@ class AlchemyTrainer(AlchemyRunner):
                 sym_tbl().pop_global("pbar")
 
             sym_tbl().train_sched.end_train_epoch()
-        return RunResult(
-            record_dir=sym_tbl().try_get_global("record_dir"),
-            cfg=sym_tbl().cfg,
-            ret=None,
-        )
 
 
 @AlchemyRunner.register("Tester")
 class ALchemyTester(AlchemyRunner):
-    def run(self) -> RunResult:
+    def run(self):
         sym_tbl().task = AlchemyTask.from_registry(sym_tbl().cfg["task"]["type"])
         sym_tbl().model = AlchemyModel.from_registry(sym_tbl().cfg["model"]["type"])
         sym_tbl().model.to(sym_tbl().device)     # occupy GPU as soon as possible
@@ -138,16 +129,10 @@ class ALchemyTester(AlchemyRunner):
 
         evaluate(split="test", needs_loss=False)
 
-        return RunResult(
-            record_dir=sym_tbl().try_get_global("record_dir"),
-            cfg=sym_tbl().cfg,
-            ret=None,
-        )
-
 
 @AlchemyRunner.register("InferenceRunner")
 class AlchemyInferenceRunner(AlchemyRunner):
-    def run(self) -> RunResult:
+    def run(self):
         sym_tbl().task = AlchemyTask.from_registry(sym_tbl().cfg["task"]["type"])
         sym_tbl().model = AlchemyModel.from_registry(sym_tbl().cfg["model"]["type"])
         sym_tbl().model.to(sym_tbl().device)
@@ -173,12 +158,6 @@ class AlchemyInferenceRunner(AlchemyRunner):
                         needs_loss=False,
                     )
                     pbar.advance(tid)
-
-        return RunResult(
-            record_dir=sym_tbl().try_get_global("record_dir"),
-            cfg=sym_tbl().cfg,
-            ret=None,
-        )
 
 
 def seed_worker(worker_id):

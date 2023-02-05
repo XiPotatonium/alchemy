@@ -1,6 +1,8 @@
 # __future__.annotations will become the default in Python 3.11
 from __future__ import annotations
+from pathlib import Path
 from typing import Any, Dict, List, MutableMapping, Optional, TYPE_CHECKING, Type
+from datetime import datetime
 import torch
 from rich.console import Console
 
@@ -16,47 +18,44 @@ if TYPE_CHECKING:
 class MissingKey(RuntimeError):
     pass
 
+
 class NoFrame(RuntimeError):
     pass
 
 
-# 名字必须和SymbolTbl的fiedl一致
-_builtin_keys = {"runner", "model", "task", "optim", "train_sched", "registry"}
-
 class SymbolTbl:
-    def __init__(self) -> None:
-        self._frames: List[Dict[str, Any]] = []
-        self._global: Dict[str, Any] = {}
-
-        self.cfg: MutableMapping[str, Any] = {}
-        self.device_info: Optional[Dict[str, Any]] = None
-        self.device: Optional[torch.device] = None
-        self.console: Optional[Console] = None
-
-        self.plugins: List[AlchemyPlugin] = []
+    def __init__(self):
+        self.reset()
         self.registry: Dict[Type, Dict[str, Type]] = {}
-        self.model: Optional[AlchemyModel] = None
-        self.task: Optional[AlchemyTask] = None
-        self.optim: Optional[AlchemyOptimizer] = None
-        self.train_sched: Optional[AlchemyTrainScheduler] = None
 
     def reset(self):
-        self._frames: List[Dict[str, Any]] = []
-        self._global: Dict[str, Any] = {}
-
-        self.cfg: MutableMapping[str, Any] = {}
-        self.device_info: Optional[Dict[str, Any]] = None
-        self.device: Optional[torch.device] = None
-        self.console: Optional[Console] = None
-
-        self.plugins: List[AlchemyPlugin] = []
         # NOTE: reset should not reset the registered modules
         # These modules might be used in the following run
         # self.registry: Dict[Type, Dict[str, Type]] = {}
+
+        self._frames: List[Dict[str, Any]] = []
+        self._global: Dict[str, Any] = {}
+
+        self.cfg: MutableMapping[str, Any] = {}
+        self.record_dir: Optional[Path] = None
+        self.device_info: Optional[Dict[str, Any]] = None
+        self.device: Optional[torch.device] = None
+        self.ctime: Optional[datetime] = None   # runner create time
+        self.console: Optional[Console] = None
+
+        self.plugins: List[AlchemyPlugin] = []
         self.model: Optional[AlchemyModel] = None
         self.task: Optional[AlchemyTask] = None
         self.optim: Optional[AlchemyOptimizer] = None
         self.train_sched: Optional[AlchemyTrainScheduler] = None
+
+        # For debug use
+        # By default, exceptions raised between runner initialized and runner.run() finished can be set here
+        # On other words, exceptions in runner initialization (e.g. errors in plugin setup) will never be set here
+        self.exception: Optional[Exception] = None
+
+        # For run result
+        self.ret: Any = None
 
     def set(self, key, value):
         """设置当前局部作用域的值

@@ -1,0 +1,30 @@
+[tool.mypy]
+allow_redefinition = true
+
+
+[tool.pyright]
+exclude = [
+    "**/__pycache__",
+    ".ipynb_checkpoints",
+]
+
+reportMissingImports = true
+reportMissingTypeStubs = false
+
+[project]
+name = "alchemy"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "rich",
+    "loguru",
+    "typer",
+    "pytorch",
+    "numpy",
+]
+
+[project.optional.dependencies]
+config = ["tomlkit"]
+server = ["fastapi", "uvicorn"]
+device = ["pynvml"]
+logger = ["tensorboard"]

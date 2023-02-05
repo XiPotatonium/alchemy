@@ -8,7 +8,6 @@ import shutil
 from pathlib import Path
 
 import numpy as np
-import tomlkit
 
 from rich.logging import RichHandler
 from rich.console import Console
@@ -79,6 +78,8 @@ class FileLogger(AlchemyPlugin):
         self.backup_cfg = backup_cfg
 
     def __enter__(self):
+        import tomlkit
+
         no_file = sym_tbl().try_get_global("no_file", False)
         in_debug_mode = sym_tbl().try_get_global("debug", False)
         desc = sym_tbl().try_get_global("desc", "")

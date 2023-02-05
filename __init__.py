@@ -5,7 +5,6 @@ import time
 from typing import Any, Dict, Iterable, Iterator, List, MutableMapping, Optional, Union
 from pathlib import Path
 import multiprocessing as mp
-import tomlkit
 import torch
 
 from .util.alloc_gpu import alloc_cuda
@@ -39,15 +38,16 @@ class RepeatIter(Iterator):
         return self.cur
 
 
-def prepare_cfg(cfg: Union[Path, tomlkit.TOMLDocument]) -> tomlkit.TOMLDocument:
-    if isinstance(cfg, tomlkit.TOMLDocument):
+def prepare_cfg(cfg: Union[Path, MutableMapping]) -> MutableMapping:
+    import tomlkit
+    if isinstance(cfg, MutableMapping):
         cfg = deepcopy(cfg)
     elif isinstance(cfg, Path):
         with cfg.open('r', encoding="utf8") as f:
             cfg = tomlkit.load(f)
     else:
         raise ValueError(
-            f"Expect cfg to be {Path.__name__} or {tomlkit.TOMLDocument.__name__} "
+            f"Expect cfg to be {Path.__name__} or {MutableMapping.__name__} "
             f"but found {cfg.__class__.__name__}"
         )
     return cfg

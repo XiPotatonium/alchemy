@@ -63,24 +63,25 @@ def prepare_cfg(cfg: Union[Path, MutableMapping]) -> MutableMapping:
 
 
 def run_task(cfg: MutableMapping, device_info: Dict[str, Any], **kwargs) -> RunResult:
+    err = None
     try:
         with AlchemyRunner.from_registry(cfg["runner"], cfg, device_info, **kwargs) as runner:
             try:
                 runner.run()
-            except Exception as e:
+            except Exception as err:
                 # Catch exception in running
                 # Exceptions in running can be used in plugins for debugging
-                sym_tbl().exception = e
-    except Exception as e:
+                sym_tbl().exception = err
+    except Exception as err:
         # Exceptions in runner initialization cannot be used in plugins
         # But it should be captured here
         # This method will not throw
-        sym_tbl().exception = e
+        sym_tbl().exception = err
     return RunResult(
         record_dir=sym_tbl().record_dir,
         cfg=sym_tbl().cfg,
         ret=sym_tbl().ret,
-        exception=e,
+        exception=err,
     )
 
 

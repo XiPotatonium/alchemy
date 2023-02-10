@@ -8,7 +8,7 @@ from pathlib import Path
 import multiprocessing as mp
 import torch
 
-from .util.alloc_gpu import alloc_cuda
+from .util.device import alloc
 from .util.sym import sym_tbl, new_scope
 from .model import AlchemyModel
 from .task import AlchemyTask
@@ -63,28 +63,29 @@ def prepare_cfg(cfg: Union[Path, MutableMapping]) -> MutableMapping:
 
 
 def run_task(cfg: MutableMapping, device_info: Dict[str, Any], **kwargs) -> RunResult:
-    with AlchemyRunner.from_registry(cfg["runner"], cfg, device_info, **kwargs) as runner:
-        try:
-            runner.run()
-        except Exception as e:
-            sym_tbl().exception = e     # Some plugins may need this value for debugging
-            raise e
+    try:
+        with AlchemyRunner.from_registry(cfg["runner"], cfg, device_info, **kwargs) as runner:
+            try:
+                runner.run()
+            except Exception as e:
+                # Catch exception in running
+                # Exceptions in running can be used in plugins for debugging
+                sym_tbl().exception = e
+    except Exception as e:
+        # Exceptions in runner initialization cannot be used in plugins
+        # But it should be captured here
+        # This method will not throw
+        sym_tbl().exception = e
+    return RunResult(
+        record_dir=sym_tbl().record_dir,
+        cfg=sym_tbl().cfg,
+        ret=sym_tbl().ret,
+        exception=e,
+    )
 
 
 def _run_task_wrapper(q: Queue, cfg: MutableMapping, device_info: Dict[str, Any], **kwargs):
-    try:
-        result = run_task(cfg, device_info, **kwargs)
-    except Exception as e:
-        result = RunResult(
-            record_dir=sym_tbl().record_dir,
-            cfg=sym_tbl().cfg,
-            ret=sym_tbl().ret,
-            exception=e,
-        )
-        raise e
-    finally:
-        # 无论如何都要put，不然主线程会卡住
-        q.put(result)
+    q.put(run_task(cfg, device_info, **kwargs))
 
 
 def run(
@@ -97,7 +98,7 @@ def run(
     force_mp: bool = False,
     task_per_device: int = 1,
 ) -> List[RunResult]:
-    """注意在多进程（len(cfgs) != 1）的情况下，返回的顺序和cfgs并不一定对应
+    """
 
     Args:
         cfgs (List[MutableMapping]): _description_
@@ -110,12 +111,12 @@ def run(
         task_per_device (int, optional): _description_. Default to 1.
 
     Returns:
-        List[RunResult]: _description_
+        List[RunResult]: The order of the return results is not necessarily same as the cfgs
     """
     ret = []
 
     if len(cfgs) == 1 and not force_mp:
-        device_info = next(alloc_cuda([[] if device is None or len(device) == 0 else device]))
+        device_info = next(alloc([[] if device is None or len(device) == 0 else device]))
         ret.append(run_task(
             cfg=cfgs[0],
             device_info=device_info,
@@ -129,16 +130,12 @@ def run(
         torch.cuda.empty_cache()
     else:
         with mp.Manager() as mgr:
-            # 发现了一件很奇怪的事情，linux在fork模式下可以用mp.Queue，但是在spawn模式下不行
-            # 似乎子进程的queue.put无法正常进行，而且现象很奇怪，像是子进程的put没有报错直接退出了
-            # Windows的spawn倒是没有问题，
-            # 这里用mgr来托管Queue了，这样搞好像可以运行
             ret_q = mgr.Queue()
             subprocess = []
             ctx = mp.get_context('spawn')
             # alloc device and start training
             for cfg, device_info in zip(
-                cfgs, RepeatIter(alloc_cuda(
+                cfgs, RepeatIter(alloc(
                     [[] if device is None or len(device) == 0 else device for _ in range(ceil(len(cfgs) / task_per_device))],
                 ), repeat=task_per_device)      # alloc n tasks per free gpu
             ):

@@ -118,20 +118,66 @@ class FileLogger(AlchemyPlugin):
 
 @AlchemyPlugin.register()
 class Backup(AlchemyPlugin):
-    def __init__(self, paths: List[str], **kwargs) -> None:
+    """The ignore list match filenames with shell pattern
+    * "__pycache__": ignore any __pycache__
+    * "/demo.py": ignore only ./demo.py
+    * "alchemy/web/*": ignore all files under alchemy/web
+
+    Args:
+        AlchemyPlugin (_type_): _description_
+    """
+    def __init__(self, paths: List[str], ignore: List[str] = [], **kwargs) -> None:
         super().__init__()
         self.paths = [Path(p) for p in paths]
+        self.patterns = []
+        for pat in ignore:
+            if pat[0] == '/':
+                # pattern like "/aaa" will only match "./aaa"
+                self.patterns.append(pat[1:])
+            elif '/' not in pat:
+                # pattern like "aaa" will match all files like "./aaa" and "*/aaa"
+                self.patterns.append(pat)
+                self.patterns.append("*/" + pat)
+            else:
+                self.patterns.append(pat)
 
     def __enter__(self):
+        import fnmatch
+
         record_dir: Optional[Path] = sym_tbl().record_dir
         if record_dir is not None:
             backup_dir = record_dir / "backup"
             backup_dir.mkdir(parents=True, exist_ok=True)
             for path in self.paths:
+                if any(fnmatch.fnmatch(path, pat) for pat in self.patterns):
+                    continue
+
+                cpfolders = []
+                cpfiles = []
+
+                def rec_cp(src: Path, target: Path):
+                    for file in src.iterdir():
+                        if any(fnmatch.fnmatch(file, pat) for pat in self.patterns):
+                            continue
+
+                        ftarget = target / file.name
+                        if file.is_dir():
+                            cpfolders.append((file, ftarget))
+                            rec_cp(file, ftarget)
+                        elif file.is_file():
+                            cpfiles.append((file, ftarget))
+
+                ftarget = backup_dir / path.name
                 if path.is_dir():
-                    shutil.copytree(str(path), str(backup_dir / path.name))
+                    rec_cp(path, ftarget)
+                    # print(cpfiles)
+                    # print(cpfolders)
+                    for _, tgt_folder in cpfolders:
+                        tgt_folder.mkdir(parents=True, exist_ok=True)
+                    for src_file, tgt_file in cpfiles:
+                        shutil.copy(src_file, tgt_file)
                 elif path.is_file():
-                    shutil.copy(str(path), str(backup_dir / path.name))
+                    shutil.copy(path, ftarget)
                 else:
                     raise NotImplementedError()
 

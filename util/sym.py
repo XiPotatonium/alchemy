@@ -49,11 +49,6 @@ class SymbolTbl:
         self.optim: Optional[AlchemyOptimizer] = None
         self.train_sched: Optional[AlchemyTrainScheduler] = None
 
-        # For debug use
-        # By default, exceptions raised between runner initialized and runner.run() finished can be set here
-        # On other words, exceptions in runner initialization (e.g. errors in plugin setup) will never be set here
-        self.exception: Optional[Exception] = None
-
         # For run result
         self.ret: Any = None
 

@@ -7,6 +7,7 @@ from typing import Any, Dict, Iterable, Iterator, List, MutableMapping, Optional
 from pathlib import Path
 import multiprocessing as mp
 import torch
+import sys
 
 from .util.device import alloc
 from .util.sym import sym_tbl, new_scope
@@ -63,22 +64,31 @@ def prepare_cfg(cfg: Union[Path, MutableMapping]) -> MutableMapping:
 
 
 def run_task(cfg: MutableMapping, device_info: Dict[str, Any], **kwargs) -> RunResult:
-    err = None
-    try:
-        with AlchemyRunner.from_registry(cfg["runner"], cfg, device_info, **kwargs) as runner:
-            runner.run()
-    except Exception as err:
-        pass
+    with AlchemyRunner.from_registry(cfg["runner"], cfg, device_info, **kwargs) as runner:
+        runner.run()
+
     return RunResult(
         record_dir=sym_tbl().record_dir,
         cfg=sym_tbl().cfg,
         ret=sym_tbl().ret,
-        exception=err,
+        exception=None,
     )
 
 
 def _run_task_wrapper(q: Queue, cfg: MutableMapping, device_info: Dict[str, Any], **kwargs):
-    q.put(run_task(cfg, device_info, **kwargs))
+    try:
+        res = run_task(cfg, device_info, **kwargs)
+    except:
+        etype, e, tb = sys.exc_info()           # NOTE: in python >= 3.11, you may use sys.exception()
+        res = RunResult(
+            record_dir=sym_tbl().record_dir,
+            cfg=sym_tbl().cfg,
+            ret=sym_tbl().ret,
+            exception=e,
+        )
+    finally:
+        # put anyway, otherwise the main process will stuck
+        q.put(res)
 
 
 def run(

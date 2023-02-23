@@ -57,8 +57,8 @@ def prepare_cfg(cfg: Union[Path, MutableMapping]) -> MutableMapping:
             cfg = tomlkit.load(f)
     else:
         raise ValueError(
-            f"Expect cfg to be {Path.__name__} or {MutableMapping.__name__} "
-            f"but found {cfg.__class__.__name__}"
+            f"Expect cfg to be {Path} or {MutableMapping} "
+            f"but found {cfg.__class__}"
         )
     return cfg
 

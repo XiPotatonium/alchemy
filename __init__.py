@@ -86,6 +86,7 @@ def _run_task_wrapper(q: Queue, cfg: MutableMapping, device_info: Dict[str, Any]
             ret=sym_tbl().ret,
             exception=e,
         )
+        raise e
     finally:
         # put anyway, otherwise the main process will stuck
         q.put(res)

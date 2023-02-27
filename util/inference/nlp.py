@@ -94,6 +94,14 @@ class _AlchemyNLPRunner:
         # 1. load cfg
         if cfg is None:
             cfg = prepare_cfg(checkpt.parent / "cfg.toml")
+            plugins = []
+            for plugin in cfg["plugins"]:
+                if plugin["type"] == "alchemy.plugins.BasicSetup":
+                    # NOTE: plugins other than BasicSetup are not supported
+                    plugins.append(plugin)
+                    break
+            cfg["plugins"] = plugins
+
             pipes = []
             for i, pipe in enumerate(cfg["task"]["datasets"]["dev"]["pipes"]):
                 if i == 0:

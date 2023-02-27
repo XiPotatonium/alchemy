@@ -182,8 +182,8 @@ class BackwardHandle(BackwardHandler):
         return loss.item()
 
 
-@SchedPipeline.register("EvalStepESPipeline")
-class EvalStepESPipeline(EndStepPipeline):
+@SchedPipeline.register()
+class EvalESPipeline(EndStepPipeline):
     def __init__(self, period: int, split: str = "dev", needs_loss: bool = True, **kwargs):
         super().__init__()
         self.period = period

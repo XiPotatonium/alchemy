@@ -215,7 +215,7 @@ def evaluate(
 
     with torch.no_grad():
         for batch in itr:
-            eval_log = sym_tbl().task.eval_step(batch, needs_loss=needs_loss)
+            eval_log, output = sym_tbl().task.eval_step(batch, needs_loss=needs_loss)
             pbar.update(
                 tid,
                 advance=1,

@@ -13,29 +13,27 @@ class ItrToLst(LstDataPipeline):
         is_sized: bool,
         **kwargs
     ):
-        super().__init__()
-        self.data = []
+        super().__init__([])
 
         columns = full_columns() if is_sized else no_total_columns()
         total = len(datapipe) if is_sized else float('inf')
         with Progress(*columns) as pbar:
             tid = pbar.add_task(ItrToLst.__name__, total=total)
             for data in datapipe:
-                self.data.append(data)
+                self.datapipe.append(data)
                 pbar.advance(tid)
 
     def __getitem__(self, index):
-        return self.data[index]
+        return self.datapipe[index]
 
     def __len__(self):
-        return len(self.data)
+        return len(self.datapipe)
 
 
 @DataPipeline.register()
 class SequenceWrapper(LstDataPipeline):
     def __init__(self, datapipe: List, **kwargs):
-        super().__init__()
-        self.datapipe = datapipe
+        super().__init__(datapipe)
 
     def __getitem__(self, index):
         return self.datapipe[index]

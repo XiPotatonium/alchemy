@@ -3,9 +3,10 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, MutableMapping, Tuple
+from loguru import logger
 from torch.utils.data import Dataset
 
-from .pipeline import EvalPipeline, OutputPipeline
+from .pipeline import DataPipeline, EvalPipeline, OutputPipeline
 from .registry import Registrable
 from .util.sym import sym_tbl
 
@@ -32,23 +33,42 @@ class AlchemyTask(ABC, Registrable):
         return None
 
     def dataset(self, split: str) -> Tuple[Dataset, Dict[str, Any]]:
-        """
-        Return a loaded dataset split.
+        """_summary_
 
         Args:
-            split (str): name of the split (e.g., train, valid, test)
+            split (str): _description_
+
+        Raises:
+            KeyError: _description_
+
+        Returns:
+            Tuple[Dataset, Dict[str, Any]]: dataset and args. The args will be passed to DataLoader
         """
         if split not in self._datasets:
             raise KeyError("Dataset not loaded: " + split)
         return self._datasets[split]
 
-    @abstractmethod
     def load_dataset(
         self,
         split: str,
         **kwargs,
     ):
-        raise NotImplementedError()
+        """
+        You may have to modify some kwargs such as collate_fn
+        """
+        logger.info(f"Load dataset {split}")
+
+        if "batch_size" not in kwargs:
+            kwargs["batch_size"] = None
+        pipes: List[Dict[str, Any]] = kwargs.pop("pipes")
+
+        for i, p_cfg in enumerate(pipes):
+            if i == 0:
+                datapipe = DataPipeline.from_registry(p_cfg["type"], **p_cfg)
+            else:
+                datapipe = DataPipeline.from_registry(p_cfg["type"], datapipe, **p_cfg)
+
+        self._datasets[split] = (datapipe, kwargs)
 
     def step(
         self,
@@ -68,7 +88,7 @@ class AlchemyTask(ABC, Registrable):
         batch: MutableMapping,
         needs_loss: bool,
         **kwargs
-    ) -> str:
+    ) -> Tuple[str, Dict[str, Any]]:
         outputs = sym_tbl().model.forward(
             batch,
             needs_loss=needs_loss,
@@ -84,7 +104,7 @@ class AlchemyTask(ABC, Registrable):
         for p in self.outputpipes:
             outputs = p(outputs, batch)
 
-        return log
+        return log, outputs
 
     def begin_eval(self, split: str, **kwargs):
         for pipe in self.evalpipes:

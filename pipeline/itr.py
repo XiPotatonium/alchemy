@@ -15,8 +15,7 @@ class Batch(ItrDataPipeline):
         drop_last: bool = False,
         **kwargs
     ):
-        super().__init__()
-        self.datapipe = datapipe
+        super().__init__(datapipe)
         self.batch_size = batch_size
         self.drop_last = drop_last
 
@@ -35,8 +34,7 @@ class Batch(ItrDataPipeline):
 @DataPipeline.register()
 class WithLength(ItrDataPipeline):
     def __init__(self, datapipe: ItrDataPipeline, length: Optional[int], **kwargs):
-        super().__init__()
-        self.datapipe = datapipe
+        super().__init__(datapipe)
         self.length = length
 
     def __iter__(self) -> Iterator:
@@ -58,8 +56,7 @@ class Shuffle(ItrDataPipeline):
         buffer_size: int = 1000,
         **kwargs
     ):
-        super().__init__()
-        self.datapipe = datapipe
+        super().__init__(datapipe)
         self.buffer_size = buffer_size
         self._shuffle_enabled = True
 
@@ -92,8 +89,7 @@ class Shuffle(ItrDataPipeline):
 @DataPipeline.register()
 class SplitByWorker(ItrDataPipeline):
     def __init__(self, datapipe: ItrDataPipeline, **kwargs):
-        super().__init__()
-        self.datapipe = datapipe
+        super().__init__(datapipe)
 
     def __iter__(self) -> Iterator:
         worker_info = get_worker_info()

@@ -9,6 +9,7 @@ import multiprocessing as mp
 import torch
 import sys
 
+from .util.inference.nlp import _AlchemyNLPRunner
 from .util.device import alloc
 from .util.sym import sym_tbl, new_scope
 from .model import AlchemyModel

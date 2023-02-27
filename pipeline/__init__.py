@@ -32,14 +32,24 @@ class DataPipeline(Registrable):
             logger.error("Error initializing {}".format(pipeline_cls))
             raise e
 
+    def __init__(self, datapipe) -> None:
+        super().__init__()
+        self.datapipe = datapipe
+
 
 class ItrDataPipeline(DataPipeline, IterableDataset):
+
+    def __init__(self, datapipe) -> None:
+        super().__init__(datapipe)
 
     def __iter__(self) -> Iterator:
         raise NotImplementedError()
 
 
 class LstDataPipeline(DataPipeline, Dataset):
+
+    def __init__(self, datapipe) -> None:
+        super().__init__(datapipe)
 
     def __getitem__(self, index):
         raise NotImplementedError()

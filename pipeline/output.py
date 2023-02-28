@@ -4,7 +4,7 @@ from typing import Any, Dict, List, MutableMapping, Optional, Iterator, Union
 
 from ..util.sym import sym_tbl
 from ..util.json import NpJsonEncoder
-from ..sched import AlchemyTrainScheduler
+from ..scheduler import AlchemyTrainScheduler
 from . import OutputPipeline
 
 

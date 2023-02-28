@@ -15,7 +15,7 @@ from .util.sym import sym_tbl, new_scope
 from .model import AlchemyModel
 from .task import AlchemyTask
 from .runner import AlchemyRunner
-from .sched import AlchemyTrainScheduler
+from .scheduler import AlchemyTrainScheduler
 from .optim import AlchemyOptimizer
 
 

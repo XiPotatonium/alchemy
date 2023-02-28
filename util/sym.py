@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from ..model import AlchemyModel
     from ..task import AlchemyTask
     from ..optim import AlchemyOptimizer
-    from ..sched import AlchemyTrainScheduler
+    from ..scheduler import AlchemyTrainScheduler
     from ..plugins import AlchemyPlugin
 
 

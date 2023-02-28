@@ -19,7 +19,7 @@ from .util.sym import sym_tbl
 from .task import AlchemyTask
 from .model import AlchemyModel
 from .optim import AlchemyOptimizer
-from .sched import AlchemyTrainScheduler
+from .scheduler import AlchemyTrainScheduler
 from .plugins import AlchemyPlugin
 
 

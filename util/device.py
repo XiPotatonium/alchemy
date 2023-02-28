@@ -1,7 +1,7 @@
 import os
 import random
 import time
-from typing import List, Set
+from typing import Any, Dict, Generator, List, Set
 import importlib
 import sys
 
@@ -22,7 +22,7 @@ def check_installed(package_name: str):
 def alloc(
     preferred_devices: List[List[int]],
     wait_time: float = 240.0,
-):
+) -> Generator[Dict[str, Any]]:
     if check_installed('pynvml'):
         for device in alloc_cuda(preferred_devices, wait_time):
             yield device
@@ -35,7 +35,7 @@ def alloc(
 def alloc_cuda(
     preferred_devices: List[List[int]],
     wait_time: float = 240.0,
-):
+) -> Generator[Dict[str, Any]]:
     """_summary_
 
     Args:

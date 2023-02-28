@@ -10,7 +10,7 @@ Communication protocol:
 """
 from __future__ import annotations
 import datetime
-from typing import Any, Dict, Iterator, List, MutableMapping, Optional
+from typing import Any, Dict, Generator, Iterator, List, MutableMapping, Optional, Tuple
 from pathlib import Path
 
 import torch
@@ -71,7 +71,7 @@ class AlchemyNLP:
         self.conn.send(None)
         self.p.join()
 
-    def pipe(self, data: List) -> Iterator:
+    def pipe(self, data: List) -> Generator:
         self.conn.send(data)
         while True:
             result = self.conn.recv()
@@ -161,7 +161,7 @@ class _AlchemyNLPRunner:
         for p in sym_tbl().plugins:
             p.__exit__(exc_type, exc_val, exc_tb)
 
-    def pipe(self, data: List) -> Iterator[str, Any]:
+    def pipe(self, data: List) -> Generator[Tuple[str, Any]]:
         """_summary_
 
         Args:

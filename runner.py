@@ -179,7 +179,7 @@ def get_dataloader(
         num_workers (int, optional): _description_. Defaults to 0.
     """
 
-    g = torch.Iterator()
+    g = torch.Generator()
     g.manual_seed(seed)
 
     return DataLoader(

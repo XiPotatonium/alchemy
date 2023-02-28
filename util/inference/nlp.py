@@ -61,12 +61,9 @@ class AlchemyNLP:
                 **kwargs,
             }
         )
-
-    def __enter__(self) -> _AlchemyNLPRunner:
         self.p.start()
-        return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def close(self):
         self.conn.send(None)
         self.p.join()
 
@@ -152,13 +149,11 @@ class _AlchemyNLPRunner:
         sym_tbl().task.load_dataset(split="inference")
 
     def __enter__(self) -> _AlchemyNLPRunner:
-        for p in sym_tbl().plugins:
-            p.__enter__()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         for p in sym_tbl().plugins:
-            p.__exit__(exc_type, exc_val, exc_tb)
+            p.exit()
 
     def pipe(self, data: List) -> Iterator[Tuple[str, Any]]:
         """_summary_

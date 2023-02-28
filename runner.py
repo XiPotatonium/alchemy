@@ -59,13 +59,11 @@ class AlchemyRunner(Registrable, ABC):
             sym_tbl().plugins.append(AlchemyPlugin.from_registry(p_cfg["type"], **p_cfg))
 
     def __enter__(self):
-        for p in sym_tbl().plugins:
-            p.__enter__()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         for p in sym_tbl().plugins:
-            p.__exit__(exc_type, exc_val, exc_tb)
+            p.exit()
 
     @abstractmethod
     def run(self):

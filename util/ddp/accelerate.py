@@ -89,7 +89,6 @@ class BasicSetup(AlchemyPlugin):
     def __init__(self, **kwargs) -> None:
         super().__init__()
 
-    def __enter__(self):
         # Some basic setup
         in_debug_mode = sym_tbl().try_get_global("debug", False)
         if in_debug_mode:

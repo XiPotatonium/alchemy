@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, MutableMapping, Tuple
+from typing import Any, Dict, Iterator, List, MutableMapping, Tuple, Union
 from loguru import logger
 from torch.utils.data import Dataset
 
@@ -74,7 +74,7 @@ class AlchemyTask(ABC, Registrable):
         self,
         batch: MutableMapping,
         **kwargs
-    ) -> Tuple[str, Dict[str, Any]]:
+    ) -> Tuple[str, Union[Dict[str, Any], List]]:
         outputs = sym_tbl().model.forward(
             batch,
             needs_loss=True,
@@ -88,7 +88,7 @@ class AlchemyTask(ABC, Registrable):
         batch: MutableMapping,
         needs_loss: bool,
         **kwargs
-    ) -> Tuple[str, Dict[str, Any]]:
+    ) -> Tuple[str, Union[Dict[str, Any], List]]:
         outputs = sym_tbl().model.forward(
             batch,
             needs_loss=needs_loss,

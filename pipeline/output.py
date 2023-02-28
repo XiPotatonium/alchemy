@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Any, MutableMapping, Optional
+from typing import Any, MutableMapping, Optional, Iterator, Union
 
 from ..util.sym import sym_tbl
 from ..util.json import NpJsonEncoder
@@ -15,7 +15,7 @@ class SaveAppend(OutputPipeline):
         self.filename = filename
         self.step_tag = step_tag
 
-    def __call__(self, outputs: Any, inputs: MutableMapping[str, Any]) -> Any:
+    def __call__(self, outputs: Union[Dict[str, Any], List], inputs: MutableMapping[str, Any]) -> Any:
         record_dir: Optional[Path] = sym_tbl().record_dir
         if record_dir is not None:
             filename = record_dir / self.filename
@@ -41,7 +41,7 @@ class Collect(OutputPipeline):
         super().__init__()
         self.varname = varname
 
-    def __call__(self, outputs: Any, inputs: MutableMapping[str, Any]) -> Any:
+    def __call__(self, outputs: Union[Dict[str, Any], List], inputs: MutableMapping[str, Any]) -> Any:
         sym_tbl().try_set_global(self.varname, [])
         sym_tbl().get_global(self.varname).extend(outputs)
         return outputs

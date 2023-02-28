@@ -77,7 +77,11 @@ class AlchemyNLP:
             result = self.conn.recv()
             if result is None:
                 break
-            yield result
+            log, outputs = result
+            if not isinstance(outputs, List):
+                raise ValueError("The model output must be a List")
+            for output in outputs:
+                yield output
 
 
 class _AlchemyNLPRunner:

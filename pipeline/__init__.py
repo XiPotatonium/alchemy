@@ -1,7 +1,7 @@
 # __future__.annotations will become the default in Python 3.11
 from __future__ import annotations
 
-from typing import Any, Dict, Iterator, MutableMapping
+from typing import Any, Dict, Iterator, MutableMapping, Union
 from abc import ABC, abstractmethod
 from torch.utils.data import IterableDataset, Dataset
 from loguru import logger
@@ -87,7 +87,7 @@ class OutputPipeline(Registrable):
             logger.error("Error initializing {}".format(pipeline_cls))
             raise e
 
-    def __call__(self, outputs: Any, inputs: MutableMapping[str, Any]) -> Any:
+    def __call__(self, outputs: Union[Dict[str, Any], List], inputs: MutableMapping[str, Any]) -> Any:
         raise NotImplementedError()
 
 

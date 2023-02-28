@@ -87,7 +87,7 @@ class OutputPipeline(Registrable):
             logger.error("Error initializing {}".format(pipeline_cls))
             raise e
 
-    def __call__(self, outputs: Union[Dict[str, Any], List], inputs: MutableMapping[str, Any]) -> Any:
+    def __call__(self, outputs: Union[Dict[str, Any], List], inputs: MutableMapping[str, Any]) -> Union[Dict[str, Any], List]:
         raise NotImplementedError()
 
 

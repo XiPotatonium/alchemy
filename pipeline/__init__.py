@@ -1,7 +1,7 @@
 # __future__.annotations will become the default in Python 3.11
 from __future__ import annotations
 
-from typing import Any, Dict, Iterator, MutableMapping, Union
+from typing import Any, Dict, Iterator, MutableMapping, Union, List
 from abc import ABC, abstractmethod
 from torch.utils.data import IterableDataset, Dataset
 from loguru import logger

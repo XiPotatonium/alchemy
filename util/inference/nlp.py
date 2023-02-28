@@ -9,7 +9,7 @@ Communication protocol:
     - The parent will send a `None` to the child to terminate the child process.
 """
 from __future__ import annotations
-import datetime
+from datetime import datetime
 from typing import Any, Dict, Iterator, List, MutableMapping, Optional, Tuple
 from pathlib import Path
 
@@ -21,6 +21,7 @@ from ...plugins import AlchemyPlugin
 from ...runner import get_dataloader
 from ...model import AlchemyModel
 from ...task import AlchemyTask
+from ...pipeline.lst import SequenceWrapper
 from ... import prepare_cfg
 
 
@@ -32,9 +33,11 @@ def _alchemy_nlp_task(
         while True:
             data = conn.recv()
             if data is None:
+                # main process sends None to terminate the child process
                 break
             for result in nlp.pipe(data):
                 conn.send(result)
+            conn.send(None)     # send None to indicate the end of the data
 
 
 class AlchemyNLP:
@@ -68,6 +71,10 @@ class AlchemyNLP:
         self.p.join()
 
     def pipe(self, data: List) -> Iterator:
+        if not isinstance(data, List):
+            raise ValueError("The data must be a List")
+        if len(data) == 0:
+            return
         self.conn.send(data)
         while True:
             result = self.conn.recv()
@@ -93,7 +100,7 @@ class _AlchemyNLPRunner:
 
         # 1. load cfg
         if cfg is None:
-            cfg = prepare_cfg(checkpt.parent / "cfg.toml")
+            cfg = prepare_cfg(checkpt.parent.parent / "cfg.toml")       # Assume the checkpt is stored in "xxx/checpt/best"
             plugins = []
             for plugin in cfg["plugins"]:
                 if plugin["type"] == "alchemy.plugins.BasicSetup":
@@ -112,6 +119,8 @@ class _AlchemyNLPRunner:
                         "type": "alchemy.pipeline.lst.SequenceWrapper",
                         "datapipe": [],
                     }
+                elif pipe["type"] == "alchemy.pipeline.lst.SequenceWrapper":
+                    raise RuntimeError("\"alchemy.pipeline.lst.SequenceWrapper\" should only appear at the beginning of the pipeline.")
                 if pipe["type"] == "alchemy.pipeline.lst.ItrToLst":
                     # Fully pipeline
                     continue
@@ -144,9 +153,10 @@ class _AlchemyNLPRunner:
         sym_tbl().task = AlchemyTask.from_registry(sym_tbl().cfg["task"]["type"])
         sym_tbl().model = AlchemyModel.from_registry(sym_tbl().cfg["model"]["type"])
         sym_tbl().model.to(sym_tbl().device)     # occupy GPU as soon as possible
+        sym_tbl().model.eval()
 
         # There is no ItrToLst in pipelines
-        sym_tbl().task.load_dataset(split="inference")
+        sym_tbl().task.load_dataset(split="inference", **cfg["task"]["datasets"]["inference"])
 
     def __enter__(self) -> _AlchemyNLPRunner:
         return self
@@ -170,7 +180,7 @@ class _AlchemyNLPRunner:
         """
         dset, dset_kw = sym_tbl().task.dataset("inference")
         pipeline = dset
-        while pipeline.type != "alchemy.pipeline.lst.SequenceWrapper":
+        while not isinstance(pipeline, SequenceWrapper):
             pipeline = pipeline.datapipe
         pipeline.datapipe = data
 
@@ -178,8 +188,9 @@ class _AlchemyNLPRunner:
             dset,
             **dset_kw,
         )
-        for batch in itr:
-            yield sym_tbl().task.eval_step(
-                batch,
-                needs_loss=False,
-            )
+        with torch.no_grad():
+            for batch in itr:
+                yield sym_tbl().task.eval_step(
+                    batch,
+                    needs_loss=False,
+                )

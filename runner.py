@@ -174,12 +174,12 @@ def get_dataloader(
     """AlchemyRunner will iterate dataset with this method
 
     Args:
-        dataset (Union[ItrDataPipeline, LstDataPipeline]):
+        dataset (Dataset):
         seed (int, optional): 用于generator. Defaults to 1.
         num_workers (int, optional): _description_. Defaults to 0.
     """
 
-    g = torch.Generator()
+    g = torch.Iterator()
     g.manual_seed(seed)
 
     return DataLoader(

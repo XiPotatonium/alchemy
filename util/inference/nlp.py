@@ -10,15 +10,14 @@ Communication protocol:
 """
 from __future__ import annotations
 import datetime
-from typing import Any, Dict, Generator, Iterator, List, MutableMapping, Optional, Tuple
+from typing import Any, Dict, Iterator, List, MutableMapping, Optional, Tuple
 from pathlib import Path
 
 import torch
 import multiprocessing as mp
-from multiprocessing.connection import PipeConnection
 
-from plugins import AlchemyPlugin
 from ..sym import sym_tbl
+from ...plugins import AlchemyPlugin
 from ...runner import get_dataloader
 from ...model import AlchemyModel
 from ...task import AlchemyTask
@@ -26,7 +25,7 @@ from ... import prepare_cfg
 
 
 def _alchemy_nlp_task(
-        conn: PipeConnection,
+        conn,
         **kwargs
     ):
     with _AlchemyNLPRunner(**kwargs) as nlp:
@@ -71,7 +70,7 @@ class AlchemyNLP:
         self.conn.send(None)
         self.p.join()
 
-    def pipe(self, data: List) -> Generator:
+    def pipe(self, data: List) -> Iterator:
         self.conn.send(data)
         while True:
             result = self.conn.recv()
@@ -161,7 +160,7 @@ class _AlchemyNLPRunner:
         for p in sym_tbl().plugins:
             p.__exit__(exc_type, exc_val, exc_tb)
 
-    def pipe(self, data: List) -> Generator[Tuple[str, Any]]:
+    def pipe(self, data: List) -> Iterator[Tuple[str, Any]]:
         """_summary_
 
         Args:

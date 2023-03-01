@@ -6,7 +6,6 @@ Communication protocol:
     - The parent process will send a List of data to start inference.
     - The child process will receive the data and perform inference.
     - The child returns results in order and terminates with a `None`.
-    - The parent will send a `None` to the child to terminate the child process.
 """
 from __future__ import annotations
 from datetime import datetime
@@ -31,9 +30,10 @@ def _alchemy_nlp_task(
     ):
     with _AlchemyNLPRunner(**kwargs) as nlp:
         while True:
-            data = conn.recv()
-            if data is None:
-                # main process sends None to terminate the child process
+            try:
+                data = conn.recv()
+            except EOFError:
+                # main process closes the connection
                 break
             for result in nlp.pipe(data):
                 conn.send(result)
@@ -67,7 +67,7 @@ class AlchemyNLP:
         self.p.start()
 
     def close(self):
-        self.conn.send(None)
+        self.conn.close()
         self.p.join()
 
     def pipe(self, data: List) -> Iterator:
@@ -137,6 +137,8 @@ class _AlchemyNLPRunner:
                     continue
                 pipes.append(pipe)
             cfg["task"]["outputpipes"] = pipes
+
+            cfg["model"]["model_path"] = str(checkpt)
 
         sym_tbl().cfg = cfg
         sym_tbl().device_info = device_info

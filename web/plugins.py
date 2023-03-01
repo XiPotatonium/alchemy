@@ -23,10 +23,7 @@ class MailOnFinish(AlchemyPlugin):
         super().__init__()
         self.send_ok = send_ok
 
-    def __enter__(self):
-        init()
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def exit(self):
         etype, e, tb = sys.exc_info()           # NOTE: in python >= 3.11, you may use sys.exception()
         if e is None:
             if self.send_ok:
@@ -41,4 +38,3 @@ class MailOnFinish(AlchemyPlugin):
                 text=traceback.format_exc(),
                 level=Level.ERROR
             )
-        return super().__exit__(exc_type, exc_val, exc_tb)

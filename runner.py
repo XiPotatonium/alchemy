@@ -19,7 +19,7 @@ from .util.sym import sym_tbl
 from .task import AlchemyTask
 from .model import AlchemyModel
 from .optim import AlchemyOptimizer
-from .sched import AlchemyTrainScheduler
+from .scheduler import AlchemyTrainScheduler
 from .plugins import AlchemyPlugin
 
 
@@ -59,13 +59,11 @@ class AlchemyRunner(Registrable, ABC):
             sym_tbl().plugins.append(AlchemyPlugin.from_registry(p_cfg["type"], **p_cfg))
 
     def __enter__(self):
-        for p in sym_tbl().plugins:
-            p.__enter__()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         for p in sym_tbl().plugins:
-            p.__exit__(exc_type, exc_val, exc_tb)
+            p.exit()
 
     @abstractmethod
     def run(self):
@@ -174,7 +172,7 @@ def get_dataloader(
     """AlchemyRunner will iterate dataset with this method
 
     Args:
-        dataset (Union[ItrDataPipeline, LstDataPipeline]):
+        dataset (Dataset):
         seed (int, optional): 用于generator. Defaults to 1.
         num_workers (int, optional): _description_. Defaults to 0.
     """
@@ -215,7 +213,7 @@ def evaluate(
 
     with torch.no_grad():
         for batch in itr:
-            eval_log = sym_tbl().task.eval_step(batch, needs_loss=needs_loss)
+            eval_log, output = sym_tbl().task.eval_step(batch, needs_loss=needs_loss)
             pbar.update(
                 tid,
                 advance=1,

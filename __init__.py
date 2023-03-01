@@ -14,7 +14,7 @@ from .util.sym import sym_tbl, new_scope
 from .model import AlchemyModel
 from .task import AlchemyTask
 from .runner import AlchemyRunner
-from .sched import AlchemyTrainScheduler
+from .scheduler import AlchemyTrainScheduler
 from .optim import AlchemyOptimizer
 
 
@@ -57,8 +57,8 @@ def prepare_cfg(cfg: Union[Path, MutableMapping]) -> MutableMapping:
             cfg = tomlkit.load(f)
     else:
         raise ValueError(
-            f"Expect cfg to be {Path.__name__} or {MutableMapping.__name__} "
-            f"but found {cfg.__class__.__name__}"
+            f"Expect cfg to be {Path} or {MutableMapping} "
+            f"but found {cfg.__class__}"
         )
     return cfg
 
@@ -86,6 +86,7 @@ def _run_task_wrapper(q: Queue, cfg: MutableMapping, device_info: Dict[str, Any]
             ret=sym_tbl().ret,
             exception=e,
         )
+        raise e
     finally:
         # put anyway, otherwise the main process will stuck
         q.put(res)

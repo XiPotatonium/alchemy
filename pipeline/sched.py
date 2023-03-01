@@ -29,7 +29,7 @@ class SetRequiresGradBSPipeline(BeginStepPipeline):
 
 
 @SchedPipeline.register()
-class InitEvalBEPipeline(BeginEpochPipeline):
+class EvalAtStartBEPipeline(BeginEpochPipeline):
     def __init__(self, split: str = "dev", needs_loss: bool = True, **kwargs) -> None:
         super().__init__()
         self.split = split
@@ -46,7 +46,7 @@ class InitEvalBEPipeline(BeginEpochPipeline):
 
 
 @SchedPipeline.register()
-class EndEvalEEPipeline(EndEpochPipeline):
+class EvalAtFinishEEPipeline(EndEpochPipeline):
     def __init__(self, split: str = "dev", needs_loss: bool = True, **kwargs) -> None:
         super().__init__()
         self.split = split
@@ -64,7 +64,7 @@ class EndEvalEEPipeline(EndEpochPipeline):
 
 
 @SchedPipeline.register()
-class EvalStepESPipeline(EndStepPipeline):
+class EvalESPipeline(EndStepPipeline):
     def __init__(self, period: int, split: str = "dev", needs_loss: bool = True, **kwargs) -> None:
         super().__init__()
         self.period = period
@@ -82,7 +82,7 @@ class EvalStepESPipeline(EndStepPipeline):
 
 
 @SchedPipeline.register()
-class EvalEpochEEPipeline(EndEpochPipeline):
+class EvalEEPipeline(EndEpochPipeline):
     def __init__(self, period: int, split: str = "dev", needs_loss: bool = True, **kwargs) -> None:
         super().__init__()
         self.period = period

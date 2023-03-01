@@ -27,12 +27,13 @@ class AlchemyPlugin(Registrable):
         return plugin
 
     def __init__(self) -> None:
+        """called before all other registrable modules are initialized
+        """
         super().__init__()
 
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def exit(self):
+        """called when the runner is exiting
+        """
         pass
 
 
@@ -41,7 +42,6 @@ class BasicSetup(AlchemyPlugin):
     def __init__(self, **kwargs) -> None:
         super().__init__()
 
-    def __enter__(self):
         # Some basic setup
         in_debug_mode = sym_tbl().try_get_global("debug", False)
         if in_debug_mode:
@@ -76,7 +76,6 @@ class FileLogger(AlchemyPlugin):
         self.create_readme = create_readme
         self.backup_cfg = backup_cfg
 
-    def __enter__(self):
         import tomlkit
 
         no_file = sym_tbl().try_get_global("no_file", False)
@@ -141,7 +140,6 @@ class Backup(AlchemyPlugin):
             else:
                 self.patterns.append(pat)
 
-    def __enter__(self):
         import fnmatch
 
         record_dir: Optional[Path] = sym_tbl().record_dir
@@ -190,7 +188,6 @@ class TensorboardLogger(AlchemyPlugin):
         self.varname = varname
         self.summary_writer = None
 
-    def __enter__(self):
         record_dir: Optional[Path] = sym_tbl().record_dir
         if record_dir is not None:
             self.summary_writer = SummaryWriter(
@@ -199,7 +196,7 @@ class TensorboardLogger(AlchemyPlugin):
             if not sym_tbl().try_set_global(self.varname, self.summary_writer):
                 raise RuntimeError(f"\"{self.varname}\" already exists, there might be something wrong")
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def exit(self):
         if self.summary_writer is not None:
             self.summary_writer.close()
             sym_tbl().pop_global(self.varname)
@@ -217,7 +214,6 @@ class Seeding(AlchemyPlugin):
         self.seed = seed
         self.use_deterministic_algorithms = use_deterministic_algorithms
 
-    def __enter__(self):
         sym_tbl().set_global("seed", self.seed)
         random.seed(self.seed)
         np.random.seed(self.seed)
@@ -243,7 +239,6 @@ class DisplayRunningInfo(AlchemyPlugin):
     def __init__(self, **kwargs) -> None:
         super().__init__()
 
-    def __enter__(self):
         logger.info("Alloc task \"{}\" on device {})".format(sym_tbl().cfg["tag"], sym_tbl().device_info))
         # 如果没有CUDA会有问题吗?
         logger.info(f"TorchVer={torch.__version__}(CUDA={torch.version.cuda},cuDNN={torch.backends.cudnn.version()})")

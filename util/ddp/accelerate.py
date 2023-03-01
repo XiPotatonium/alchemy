@@ -7,15 +7,15 @@ from rich.progress import Progress
 from rich.console import Console
 from torch import Tensor, nn
 from torch.utils.data import IterableDataset
-from alchemy.plugins import AlchemyPlugin
-from alchemy.runner import evaluate, get_dataloader, AlchemyTrainer
-from alchemy.model import BackwardHandler
-from alchemy.pipeline import (
+from ...plugins import AlchemyPlugin
+from ...runner import evaluate, get_dataloader, AlchemyTrainer
+from ...model import BackwardHandler
+from ...pipeline import (
     DataPipeline, EvalPipeline, ItrDataPipeline, SchedPipeline, EndStepPipeline
 )
-from alchemy import sym_tbl, AlchemyTrainScheduler, AlchemyTask, AlchemyModel, AlchemyOptimizer, AlchemyRunner
-from alchemy.util import filter_optional_cfg
-from alchemy.util.extention.rich import full_columns, no_total_columns
+from ... import sym_tbl, AlchemyTrainScheduler, AlchemyTask, AlchemyModel, AlchemyOptimizer, AlchemyRunner
+from ...util import filter_optional_cfg
+from ...util.extention.rich import full_columns, no_total_columns
 from accelerate import Accelerator, DistributedDataParallelKwargs
 from transformers.optimization import AdamW as _HFAdamW
 from transformers import PreTrainedModel
@@ -89,7 +89,6 @@ class BasicSetup(AlchemyPlugin):
     def __init__(self, **kwargs) -> None:
         super().__init__()
 
-    def __enter__(self):
         # Some basic setup
         in_debug_mode = sym_tbl().try_get_global("debug", False)
         if in_debug_mode:
@@ -113,8 +112,7 @@ class BasicSetup(AlchemyPlugin):
 @DataPipeline.register()
 class Sharding(ItrDataPipeline):
     def __init__(self, datapipe: ItrDataPipeline, **kwargs):
-        super().__init__()
-        self.datapipe = datapipe
+        super().__init__(datapipe)
         # NOTE: runner should not be a field of DataPipeline
         accelerator: Accelerator = sym_tbl().get_global(_VARNAME)
         self.node_count = accelerator.num_processes
@@ -182,8 +180,8 @@ class BackwardHandle(BackwardHandler):
         return loss.item()
 
 
-@SchedPipeline.register("EvalStepESPipeline")
-class EvalStepESPipeline(EndStepPipeline):
+@SchedPipeline.register()
+class EvalESPipeline(EndStepPipeline):
     def __init__(self, period: int, split: str = "dev", needs_loss: bool = True, **kwargs):
         super().__init__()
         self.period = period

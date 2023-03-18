@@ -20,7 +20,7 @@ def check_installed(package_name: str):
 
 
 def alloc(
-    preferred_devices: List[List[int]],
+    preferred_devices: Iterator[List[int]],
     wait_time: float = 240.0,
 ) -> Iterator[Dict[str, Any]]:
     if check_installed('pynvml'):
@@ -32,8 +32,15 @@ def alloc(
             yield {"device": "cpu"}
 
 
+def alloc1(
+    preferred_devices: List[int],
+    wait_time: float = 240.0,
+) -> Dict[str, Any]:
+    return next(alloc([preferred_devices], wait_time))
+
+
 def alloc_cuda(
-    preferred_devices: List[List[int]],
+    preferred_devices: Iterator[List[int]],
     wait_time: float = 240.0,
 ) -> Iterator[Dict[str, Any]]:
     """_summary_

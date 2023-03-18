@@ -9,6 +9,7 @@ from torch.utils.data import Dataset
 from .pipeline import DataPipeline, EvalPipeline, OutputPipeline
 from .registry import Registrable
 from .util.sym import sym_tbl
+from .util.collate_fn import CollateFn, DefaultCollateFn
 
 
 class AlchemyTask(ABC, Registrable):
@@ -113,3 +114,28 @@ class AlchemyTask(ABC, Registrable):
     def end_eval(self, split: str, **kwargs):
         for pipe in self.evalpipes:
             kwargs = pipe(split, **kwargs)
+
+
+@AlchemyTask.register("Default")
+class DefaultTask(AlchemyTask):
+    def __init__(self):
+        super(DefaultTask, self).__init__()
+        for p_cfg in self.cfg.get("outputpipes", []):
+            self.outputpipes.append(
+                OutputPipeline.from_registry(p_cfg["type"], **p_cfg)
+            )
+
+        for p_cfg in self.cfg.get("evalpipes", []):
+            self.evalpipes.append(
+                EvalPipeline.from_registry(p_cfg["type"], **p_cfg)
+            )
+
+    def load_dataset(self, split: str, **kwargs):
+        if "collate_fn" in kwargs:
+            collate_fn_cfg = kwargs.pop("collate_fn")
+            collate_fn = CollateFn.from_registry(collate_fn_cfg["type"], **collate_fn_cfg)
+        else:
+            collate_fn = DefaultCollateFn()
+
+        kwargs["collate_fn"] = collate_fn
+        super().load_dataset(split, **kwargs)

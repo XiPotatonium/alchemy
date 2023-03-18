@@ -25,6 +25,16 @@ class AlchemyTask(ABC, Registrable):
         self.outputpipes: List[OutputPipeline] = []
         self.evalpipes: List[EvalPipeline] = []
 
+        for p_cfg in self.cfg.get("outputpipes", []):
+            self.outputpipes.append(
+                OutputPipeline.from_registry(p_cfg["type"], **p_cfg)
+            )
+
+        for p_cfg in self.cfg.get("evalpipes", []):
+            self.evalpipes.append(
+                EvalPipeline.from_registry(p_cfg["type"], **p_cfg)
+            )
+
     @property
     def cfg(self) -> Dict[str, Any]:
         return sym_tbl().cfg["task"]
@@ -68,6 +78,13 @@ class AlchemyTask(ABC, Registrable):
                 datapipe = DataPipeline.from_registry(p_cfg["type"], **p_cfg)
             else:
                 datapipe = DataPipeline.from_registry(p_cfg["type"], datapipe, **p_cfg)
+
+        if "collate_fn" in kwargs:
+            collate_fn_cfg = kwargs.pop("collate_fn")
+            collate_fn = CollateFn.from_registry(collate_fn_cfg["type"], **collate_fn_cfg)
+        else:
+            collate_fn = DefaultCollateFn()
+        kwargs["collate_fn"] = collate_fn
 
         self._datasets[split] = (datapipe, kwargs)
 
@@ -118,24 +135,4 @@ class AlchemyTask(ABC, Registrable):
 
 @AlchemyTask.register("Default")
 class DefaultTask(AlchemyTask):
-    def __init__(self):
-        super(DefaultTask, self).__init__()
-        for p_cfg in self.cfg.get("outputpipes", []):
-            self.outputpipes.append(
-                OutputPipeline.from_registry(p_cfg["type"], **p_cfg)
-            )
-
-        for p_cfg in self.cfg.get("evalpipes", []):
-            self.evalpipes.append(
-                EvalPipeline.from_registry(p_cfg["type"], **p_cfg)
-            )
-
-    def load_dataset(self, split: str, **kwargs):
-        if "collate_fn" in kwargs:
-            collate_fn_cfg = kwargs.pop("collate_fn")
-            collate_fn = CollateFn.from_registry(collate_fn_cfg["type"], **collate_fn_cfg)
-        else:
-            collate_fn = DefaultCollateFn()
-
-        kwargs["collate_fn"] = collate_fn
-        super().load_dataset(split, **kwargs)
+    pass

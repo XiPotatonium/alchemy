@@ -1,7 +1,8 @@
 # __future__.annotations will become the default in Python 3.11
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+from abc import ABC, abstractclassmethod, abstractmethod
+from pathlib import Path
 from typing import Any, Dict, MutableMapping, Union, List, Optional
 from loguru import logger
 
@@ -19,6 +20,10 @@ class AlchemyModel(ABC, Registrable):
         model_cls = cls.resolve_registered_module(ty)
         model = model_cls()
         return model
+
+    @abstractclassmethod
+    def save(cls, model: Module, path: Path, **kwargs):
+        pass
 
     def __init__(self):
         super().__init__()
@@ -77,7 +82,6 @@ class AlchemyModel(ABC, Registrable):
         self.model.eval()
 
     def to(self, *args, **kwargs):
-        # 偷了个懒，没有写type hint
         return self.model.to(*args, **kwargs)
 
     def max_positions(self):

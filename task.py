@@ -9,6 +9,7 @@ from torch.utils.data import Dataset
 from .pipeline import DataPipeline, EvalPipeline, OutputPipeline
 from .registry import Registrable
 from .util.sym import sym_tbl
+from .util.collate_fn import CollateFn, DefaultCollateFn
 
 
 class AlchemyTask(ABC, Registrable):
@@ -23,6 +24,16 @@ class AlchemyTask(ABC, Registrable):
 
         self.outputpipes: List[OutputPipeline] = []
         self.evalpipes: List[EvalPipeline] = []
+
+        for p_cfg in self.cfg.get("outputpipes", []):
+            self.outputpipes.append(
+                OutputPipeline.from_registry(p_cfg["type"], **p_cfg)
+            )
+
+        for p_cfg in self.cfg.get("evalpipes", []):
+            self.evalpipes.append(
+                EvalPipeline.from_registry(p_cfg["type"], **p_cfg)
+            )
 
     @property
     def cfg(self) -> Dict[str, Any]:
@@ -67,6 +78,13 @@ class AlchemyTask(ABC, Registrable):
                 datapipe = DataPipeline.from_registry(p_cfg["type"], **p_cfg)
             else:
                 datapipe = DataPipeline.from_registry(p_cfg["type"], datapipe, **p_cfg)
+
+        if "collate_fn" in kwargs:
+            collate_fn_cfg = kwargs.pop("collate_fn")
+            collate_fn = CollateFn.from_registry(collate_fn_cfg["type"], **collate_fn_cfg)
+        else:
+            collate_fn = DefaultCollateFn()
+        kwargs["collate_fn"] = collate_fn
 
         self._datasets[split] = (datapipe, kwargs)
 
@@ -113,3 +131,8 @@ class AlchemyTask(ABC, Registrable):
     def end_eval(self, split: str, **kwargs):
         for pipe in self.evalpipes:
             kwargs = pipe(split, **kwargs)
+
+
+@AlchemyTask.register("Default")
+class DefaultTask(AlchemyTask):
+    pass

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, Iterator, List, MutableMapping
 import warnings
+from loguru import logger
 from torch.optim.lr_scheduler import _LRScheduler
 
 import torch
@@ -142,7 +143,6 @@ class LineWarmup(AlchemyTrainScheduler):
 
     def reset_lr_sched(self, **kwargs):
         import transformers
-        # NOTE: 如果dataset是AlchemyIterDset那么len可能不准确
 
         dataset, dataset_cfg = sym_tbl().task.dataset("train")
         # 如果kwargs里面没有，那么从self.cfg里面找，如果还是没有，则为默认值
@@ -151,10 +151,15 @@ class LineWarmup(AlchemyTrainScheduler):
 
         # 如果没写明多少个step（大部分情况下是的），就自动计算总共有多少个step，
         # 但是这种方法在AlchemyItrDset上可能不行因为AlchemyItrDset不一定有__len__
+        if "num_training_steps" in cfg:
+            num_training_steps = cfg["num_training_steps"]
+        else:
+            # NOTE: You should specify num_training_steps if you use AlchemyIterDset since len() is not implemented
+            num_training_steps = len(dataset) * cfg["epochs"] - self.cur_step
         self.lr_sched = transformers.get_linear_schedule_with_warmup(
             sym_tbl().optim.optimizer,
             num_warmup_steps=cfg.get("num_warmup_steps", 0),
-            num_training_steps=cfg.get("num_training_steps", len(dataset) * self.cfg["epochs"] - self.cur_step),
+            num_training_steps=num_training_steps,
         )
 
 

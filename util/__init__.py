@@ -61,18 +61,6 @@ def warn_unused_kwargs(kwargs: Dict[str, Any], called_by: Optional[Any] = None, 
         )
 
 
-def new_huggingface_model(config):
-    from transformers import BertConfig, RobertaConfig, BertModel, RobertaModel
-
-    if isinstance(config, RobertaConfig):
-        # NOTE: Roberta在前，因为RobertaConfig(BertConfig)
-        return RobertaModel(config)
-    elif isinstance(config, BertConfig):
-        return BertModel(config)
-    else:
-        raise ValueError("Expect Bert or Roberta config but found {}".format(config.__class__.__name__))
-
-
 def line_count(file: Path):
     """Efficient line counting for large file (for example large dataset file)
 

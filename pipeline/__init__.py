@@ -1,7 +1,7 @@
 # __future__.annotations will become the default in Python 3.11
 from __future__ import annotations
 
-from typing import Any, Dict, Iterator, MutableMapping, Union, List
+from typing import Any, Dict, Iterator, MutableMapping, Optional, Union, List
 from abc import ABC, abstractmethod
 from torch.utils.data import IterableDataset, Dataset
 from loguru import logger
@@ -10,19 +10,14 @@ from ..registry import Registrable
 
 
 class DataPipeline(Registrable):
-    """不能将Runner/task/model/optimizer/train_sched作为DataPipeline的成员，因为DataPipeline是可能multiprocessing跑的
-
-    Args:
-        Registrable (_type_): _description_
-
-    Returns:
-        _type_: _description_
+    """Note that DataPipeline might be executed in a different process.
+    Therefore be careful in setting fields, especially large objects
     """
     @classmethod
     def from_registry(
         cls,
         ty: str,
-        datapipe,
+        datapipe: Optional[Iterator] = None,
         **kwargs
     ):
         pipeline_cls = cls.resolve_registered_module(ty)

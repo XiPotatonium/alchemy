@@ -78,7 +78,7 @@ class AlchemyTrainer(AlchemyRunner):
     def run(self):
         sym_tbl().task = AlchemyTask.from_registry(sym_tbl().cfg["task"]["type"])
         sym_tbl().model = AlchemyModel.from_registry(sym_tbl().cfg["model"]["type"])
-        sym_tbl().model.to(sym_tbl().device)     # occupy GPU as soon as possible
+        sym_tbl().model.to(device=sym_tbl().device)     # occupy GPU as soon as possible
 
         # 'train' and 'dev' are required
         for split, dataset_cfg in sym_tbl().cfg["task"]["datasets"].items():

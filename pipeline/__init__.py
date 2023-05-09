@@ -17,7 +17,7 @@ class DataPipeline(Registrable):
     def from_registry(
         cls,
         ty: str,
-        datapipe: Optional[Iterator] = None,
+        datapipe: Union[List, Dict[str, Any], DataPipeline] = [],
         **kwargs
     ):
         pipeline_cls = cls.resolve_registered_module(ty)
@@ -27,14 +27,18 @@ class DataPipeline(Registrable):
             logger.error("Error initializing {}".format(pipeline_cls))
             raise e
 
-    def __init__(self, datapipe) -> None:
+    def __init__(self, datapipe: Union[List, Dict[str, Any], DataPipeline]) -> None:
         super().__init__()
         self.datapipe = datapipe
+
+    def require_single_source(self):
+        if not isinstance(self.datapipe, DataPipeline):
+            raise ValueError("Expect single data source but found {}".format(type(self.datapipe)))
 
 
 class ItrDataPipeline(DataPipeline, IterableDataset):
 
-    def __init__(self, datapipe) -> None:
+    def __init__(self, datapipe: Union[List, Dict[str, Any], DataPipeline]) -> None:
         super().__init__(datapipe)
 
     def __iter__(self) -> Iterator:
@@ -43,7 +47,7 @@ class ItrDataPipeline(DataPipeline, IterableDataset):
 
 class LstDataPipeline(DataPipeline, Dataset):
 
-    def __init__(self, datapipe) -> None:
+    def __init__(self, datapipe: Union[List, Dict[str, Any], DataPipeline]) -> None:
         super().__init__(datapipe)
 
     def __getitem__(self, index):
